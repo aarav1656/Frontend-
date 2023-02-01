@@ -1,0 +1,27 @@
+.Tweet {
+  min-height: 100vh;
+  display: flex;
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+
+}
+
+.app {
+  height: 300px;
+  width: 300px;
+  border: 2px solid red;
+  background-color: aqua;
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+
+}
+
+.tweet {
+  display: flex;
+  border-radius: 2px;
+  background-color: aq
+}
+
