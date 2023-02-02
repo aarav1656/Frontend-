@@ -1,9 +1,10 @@
-import { useCreateAsset } from '@livepeer/react';
+import { Player, useAssetMetrics, useCreateAsset } from '@livepeer/react';
  
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import React from 'react';
  
-export const CreateAndViewAsset = () => {
+export const Asset = () => {
   const [video, setVideo] = useState<File | undefined>();
   const {
     mutate: createAsset,
@@ -18,6 +19,10 @@ export const CreateAndViewAsset = () => {
         }
       : null,
   );
+  const { data: metrics } = useAssetMetrics({
+    assetId: asset?.[0].id,
+    refetchInterval: 30000,
+  });
  
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles && acceptedFiles.length > 0 && acceptedFiles?.[0]) {
@@ -33,12 +38,19 @@ export const CreateAndViewAsset = () => {
     onDrop,
   });
  
+  const isLoading = useMemo(
+    () =>
+      status === 'loading' ||
+      (asset?.[0] && asset[0].status?.phase !== 'ready'),
+    [status, asset],
+  );
+ 
   const progressFormatted = useMemo(
     () =>
       progress?.[0].phase === 'failed'
         ? 'Failed to process video.'
         : progress?.[0].phase === 'waiting'
-        ? 'Waiting'
+        ? 'Waiting...'
         : progress?.[0].phase === 'uploading'
         ? `Uploading: ${Math.round(progress?.[0]?.progress * 100)}%`
         : progress?.[0].phase === 'processing'
@@ -48,25 +60,40 @@ export const CreateAndViewAsset = () => {
   );
  
   return (
-    <>
-      <div {...getRootProps()}>
-        <input {...getInputProps()} />
-        <p>Drag and drop or browse files</p>
+    <div>
+      {!asset && (
+        <div {...getRootProps()}>
+          <input {...getInputProps()} />
+          <p>Drag and drop or browse files</p>
+ 
+          {error?.message && <p>{error.message}</p>}
+        </div>
+      )}
+ 
+      {asset?.[0]?.playbackId && (
+        <Player title={asset[0].name} playbackId={asset[0].playbackId} />
+      )}
+ 
+      <div>
+        {metrics?.metrics?.[0] && (
+          <p>Views: {metrics?.metrics?.[0]?.startViews}</p>
+        )}
+ 
+        {video ? <p>{video.name}</p> : <p>Select a video file to upload.</p>}
+ 
+        {progressFormatted && <p>{progressFormatted}</p>}
+ 
+        {!asset?.[0].id && (
+          <button
+            onClick={() => {
+              createAsset?.();
+            }}
+            disabled={isLoading || !createAsset}
+          >
+            Upload
+          </button>
+        )}
       </div>
- 
-      {createError?.message && <p>{createError.message}</p>}
- 
-      {video ? <p>{video.name}</p> : <p>Select a video file to upload.</p>}
-      {progressFormatted && <p>{progressFormatted}</p>}
- 
-      <button
-        onClick={() => {
-          createAsset?.();
-        }}
-        disabled={!createAsset || createStatus === 'loading'}
-      >
-        Upload
-      </button>
-    </>
+    </div>
   );
 };
